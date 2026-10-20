@@ -1,0 +1,73 @@
+# Stack complète : MySQL + API Laravel + SPA React
+# Local (build des images) :
+#   docker compose up -d --build
+# Serveur (images déjà publiées par la CI) :
+#   docker compose pull && docker compose up -d
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-diary}
+      MYSQL_USER: ${DB_USERNAME:-diary}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD manquant dans .env}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./backend          # adapte au dossier de ton API Laravel
+    image: ${BACKEND_IMAGE:-diary-backend}:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_NAME: Diary
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY manquant dans .env}
+      APP_URL: ${API_URL:-http://127.0.0.1:8002}
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: ${DB_DATABASE:-diary}
+      DB_USERNAME: ${DB_USERNAME:-diary}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SESSION_DRIVER: database
+      SESSION_DOMAIN: ${SESSION_DOMAIN:-null}
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
+      SESSION_SAME_SITE: lax
+      CACHE_STORE: database
+      QUEUE_CONNECTION: sync
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-127.0.0.1:8090}
+      FRONTEND_URLS: ${FRONTEND_URL:-http://127.0.0.1:8090}
+      MAIL_MAILER: log
+    ports:
+      - "127.0.0.1:8002:8000"
+    volumes:
+      - storage_data:/var/www/html/storage/app
+
+  frontend:
+    build:
+      context: ./frontend         # adapte au dossier de ta SPA React
+      args:
+        VITE_API_URL: ${API_URL:-http://127.0.0.1:8002}
+    image: ${FRONTEND_IMAGE:-diary-frontend}:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8090:80"
+
+volumes:
+  db_data:
+  storage_data:

@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\DTOs\CreateProduitDTO;
+use App\DTOs\UpdateProduitDTO;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreProduitRequest;
+use App\Http\Requests\Admin\UpdateProduitRequest;
+use App\Models\Produit;
+use App\Services\ProduitService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
+
+class ProduitController extends Controller
+{
+    public function __construct(private readonly ProduitService $service)
+    {
+    }
+
+    public function index(Request $request)
+    {
+        $filters = $request->only(['search', 'statut']);
+        $perPage = (int) $request->query('per_page', 5);
+        $produits = $this->service->paginate($filters, $perPage);
+
+        if (!$request->wantsJson()) {
+            return response()->json([
+                'produits' => $produits,
+                'filters' => $filters,
+            ]);
+        }
+
+        return response()->json($produits);
+    }
+
+    public function store(StoreProduitRequest $request): JsonResponse
+    {
+        $payload = $request->validated();
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('produits', 'public');
+            $payload['image_url'] = Storage::url($path);
+        }
+
+        $dto = CreateProduitDTO::fromRequest($payload);
+        $produit = $this->service->create($dto);
+
+        if ($request->wantsJson()) {
+            return response()->json($produit, 201);
+        }
+
+        return redirect()->back();
+    }
+
+    public function update(UpdateProduitRequest $request, Produit $produit): JsonResponse
+    {
+        $payload = $request->validated();
+
+        if ($request->hasFile('image')) {
+            if ($produit->image_url && str_starts_with($produit->image_url, '/storage/')) {
+                $relativePath = ltrim(str_replace('/storage/', '', $produit->image_url), '/');
+                Storage::disk('public')->delete($relativePath);
+            }
+
+            $path = $request->file('image')->store('produits', 'public');
+            $payload['image_url'] = Storage::url($path);
+        }
+
+        $dto = UpdateProduitDTO::fromRequest($payload);
+        $updated = $this->service->update($produit, $dto);
+
+        if ($request->wantsJson()) {
+            return response()->json($updated);
+        }
+
+        return redirect()->back();
+    }
+
+    public function destroy(Produit $produit): JsonResponse
+    {
+        $this->service->delete($produit);
+
+        if (request()->wantsJson()) {
+            return response()->json(null, 204);
+        }
+
+        return redirect()->back();
+    }
+}

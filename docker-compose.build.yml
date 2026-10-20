@@ -1,0 +1,9 @@
+# Surcharge pour construire les images localement (dev / démo)
+services:
+  backend:
+    build: ./backend
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${API_URL:-http://localhost:8000}

@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Concerns;
+
+use App\Models\User;
+use Illuminate\Validation\Rule;
+
+trait ProfileValidationRules
+{
+    /**
+     * Get the validation rules used to validate user profiles.
+     *
+     * @return array<string, array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>>
+     */
+    protected function profileRules(?int $userId = null): array
+    {
+        return [
+            'nom' => $this->nameRules(),
+            'prenom' => $this->nameRules(),
+            'email' => $this->emailRules($userId),
+        ];
+    }
+
+    /**
+     * Get the validation rules used to validate user names.
+     *
+     * @return array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>
+     */
+    protected function nameRules(): array
+    {
+        return ['required', 'string', 'max:100'];
+    }
+
+    /**
+     * Get the validation rules used to validate user emails.
+     *
+     * @return array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>
+     */
+    protected function emailRules(?int $userId = null): array
+    {
+        return [
+            'required',
+            'string',
+            'email',
+            'max:191',
+            $userId === null
+                ? Rule::unique(User::class, 'email')
+                : Rule::unique(User::class, 'email')->ignore($userId, 'id_user'),
+        ];
+    }
+}
