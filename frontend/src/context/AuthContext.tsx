@@ -13,7 +13,7 @@ export type AuthUser = {
 type AuthContextValue = {
     user: AuthUser;
     loading: boolean;
-    refresh: () => Promise<void>;
+    refresh: () => Promise<AuthUser>;
     login: (email: string, password: string, remember?: boolean) => Promise<void>;
     register: (payload: Record<string, unknown>) => Promise<void>;
     logout: () => Promise<void>;
@@ -25,12 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser>(null);
     const [loading, setLoading] = useState(true);
 
-    const refresh = useCallback(async () => {
+    const refresh = useCallback(async (): Promise<AuthUser> => {
         try {
             const { data } = await api.get('/api/user');
             setUser(data);
+            return data;
         } catch {
             setUser(null);
+            return null;
         } finally {
             setLoading(false);
         }

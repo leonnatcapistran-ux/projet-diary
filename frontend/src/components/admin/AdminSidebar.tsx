@@ -1,4 +1,7 @@
-import { Link, usePage, router } from '../../lib/inertia-shim';
+import { useNavigate } from 'react-router-dom';
+import { Link, usePage } from '../../lib/inertia-shim';
+import DiaryLogo from '../Logo';
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
   Package,
@@ -56,6 +59,8 @@ type AdminCounts = {
 
 const AdminSidebar = () => {
   const page = usePage<{ adminCounts?: AdminCounts }>();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const { adminCounts } = page.props;
   const currentPath = (() => {
     const rawUrl = page.url || "/";
@@ -66,6 +71,15 @@ const AdminSidebar = () => {
   const isActive = (path: string) => {
     if (path === "/admin") return currentPath === "/admin";
     return currentPath === path || currentPath.startsWith(`${path}/`);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("La déconnexion a échoué.", error);
+    }
   };
 
   const navSectionsWithCounts = navSections.map((section) => ({
@@ -106,15 +120,10 @@ const AdminSidebar = () => {
   return (
     <div className="admin-sidebar">
       <div className="border-b border-sidebar-border px-5 py-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold/50 text-sm font-bold text-white">
-            D
-          </div>
-          <div>
-            <div className="font-display text-sm font-bold text-white">DIARY</div>
-            <div className="text-[10px] uppercase tracking-widest text-sidebar-foreground opacity-60">
-              Administration
-            </div>
+        <div className="flex flex-col gap-2">
+          <DiaryLogo iconClassName="h-9 w-9" className="[&>span]:text-xs" />
+          <div className="pl-1 text-[10px] uppercase tracking-widest text-sidebar-foreground opacity-60">
+            Administration
           </div>
         </div>
       </div>
@@ -168,7 +177,7 @@ const AdminSidebar = () => {
             </div>
           </div>
           <button
-            onClick={() => router.post('/logout')}
+            onClick={handleLogout}
             className="flex h-8 w-8 items-center justify-center rounded transition-colors hover:bg-sidebar-accent/10 text-sidebar-foreground hover:text-sidebar-accent-foreground"
             title="Se déconnecter">
             <LogOut className="h-4 w-4" />

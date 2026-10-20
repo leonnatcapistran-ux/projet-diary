@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import PublicLayout from "../components/public-layout";
 import type { Article } from "../types/types";
 import { useParams } from "react-router-dom";
-import { api } from "../lib/api";
+import { api, getApiErrorMessage } from "../lib/api";
 
 interface BlogShowProps {
   article: Article;
@@ -192,34 +192,57 @@ export function BlogShow({ article, latestArticles = [] }: BlogShowProps) {
 export default function BlogShowPage() {
   const { slug } = useParams<{ slug: string }>();
   const [state, setState] = useState<BlogShowProps | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setState(null);
-    setNotFound(false);
+    setError(null);
     api
       .get(`/api/actualites/${slug}`)
       .then(({ data }) => {
+        if (!data?.article) {
+          throw new Error('La réponse de l’API ne contient pas l’article demandé.');
+        }
         if (!cancelled) setState(data);
       })
-      .catch(() => {
-        if (!cancelled) setNotFound(true);
+      .catch((requestError: unknown) => {
+        if (!cancelled) {
+          setError(getApiErrorMessage(requestError, `/api/actualites/${slug}`, 'cet article'));
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [retry, slug]);
 
-  if (notFound) {
+  if (error) {
     return (
       <PublicLayout>
-        <div className="py-32 text-center text-white/60">Article introuvable.</div>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 bg-[#0a0a0a] px-4 text-center text-white">
+          <p role="alert" className="text-white/80">{error}</p>
+          <button
+            type="button"
+            onClick={() => setRetry((attempt) => attempt + 1)}
+            className="rounded-full bg-gold px-5 py-2 font-semibold text-black"
+          >
+            Réessayer
+          </button>
+        </div>
       </PublicLayout>
     );
   }
 
-  if (!state) return null;
+  if (!state) {
+    return (
+      <PublicLayout>
+        <div role="status" className="flex min-h-[60vh] items-center justify-center bg-[#0a0a0a] text-sm text-white/70">
+          Chargement de l’article…
+        </div>
+      </PublicLayout>
+    );
+  }
 
   return <BlogShow {...state} />;
 }

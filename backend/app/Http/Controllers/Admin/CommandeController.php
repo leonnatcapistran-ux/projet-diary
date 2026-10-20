@@ -7,8 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateCommandeRequest;
 use App\Models\Commande;
 use App\Services\CommandeService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 class CommandeController extends Controller
 {
@@ -44,21 +44,13 @@ class CommandeController extends Controller
         $dto = UpdateCommandeDTO::fromRequest($request->validated());
         $updated = $this->service->update($commande, $dto);
 
-        if ($request->wantsJson()) {
-            return response()->json($updated);
-        }
-
-        return redirect()->back();
+        return response()->json($updated);
     }
 
     public function destroy(Commande $commande): JsonResponse
     {
         $this->service->delete($commande);
 
-        if (request()->wantsJson()) {
-            return response()->json(null, 204);
-        }
-
-        return redirect()->back();
+        return response()->json(null, 204);
     }
 }

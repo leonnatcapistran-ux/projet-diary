@@ -19,7 +19,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import PublicLayout from '../components/public-layout';
 import { useCart } from '../context/CartContext';
-import { api } from '../lib/api';
+import { api, getApiErrorMessage } from '../lib/api';
 import type { Product, ProductReview } from '../types/types';
 
 
@@ -627,35 +627,57 @@ export default ProductDetail;
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [state, setState] = useState<ProductDetailProps | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setState(null);
-    setNotFound(false);
+    setError(null);
     api
       .get(`/api/produit/${id}`)
       .then(({ data }) => {
+        if (!data?.product) {
+          throw new Error('La réponse de l’API ne contient pas le produit demandé.');
+        }
         if (!cancelled) setState(data);
       })
-      .catch(() => {
-        if (!cancelled) setNotFound(true);
+      .catch((requestError: unknown) => {
+        if (!cancelled) {
+          setError(getApiErrorMessage(requestError, `/api/produit/${id}`, 'ce produit'));
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, retry]);
 
-  if (notFound) {
+  if (error) {
     return (
       <PublicLayout>
-        <div className="py-32 text-center text-white/60">Produit introuvable.</div>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 bg-[#0a0a0a] px-4 text-center text-white">
+          <p role="alert" className="text-white/80">{error}</p>
+          <button
+            type="button"
+            onClick={() => setRetry((attempt) => attempt + 1)}
+            className="rounded-full bg-gold px-5 py-2 font-semibold text-black"
+          >
+            Réessayer
+          </button>
+        </div>
       </PublicLayout>
     );
   }
 
-  if (!state) return null; // ou un skeleton
+  if (!state) {
+    return (
+      <PublicLayout>
+        <div role="status" className="flex min-h-[60vh] items-center justify-center bg-[#0a0a0a] text-sm text-white/70">
+          Chargement du produit…
+        </div>
+      </PublicLayout>
+    );
+  }
 
   return <ProductDetail {...state} />;
 }
-

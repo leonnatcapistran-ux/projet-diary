@@ -36,8 +36,8 @@ class ProductController extends Controller
             'product' => $product,
             'relatedProducts' => $related,
             'meta' => [
-                'contact_href' => route('contact.index', ['produit' => $produit->nom]),
-                'catalogue_href' => route('catalogue.index'),
+                'contact_href' => '/nous-contacter?produit='.urlencode($produit->nom),
+                'catalogue_href' => '/catalogue',
             ],
         ]);
     }
@@ -67,7 +67,7 @@ class ProductController extends Controller
             'certifications' => $produit->certifications,
             'saisonnalite' => $produit->saisonnalite,
             'utilisation' => $produit->utilisation,
-            'contact_href' => route('contact.index', ['produit' => $produit->nom]),
+            'contact_href' => '/nous-contacter?produit='.urlencode($produit->nom),
             'review_average' => $reviewAverage,
             'review_count' => $reviewCount,
             'reviews' => $publishedReviews

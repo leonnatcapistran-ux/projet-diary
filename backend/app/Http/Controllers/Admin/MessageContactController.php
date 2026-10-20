@@ -7,8 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateMessageContactRequest;
 use App\Models\MessageContact;
 use App\Services\MessageContactService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 class MessageContactController extends Controller
 {
@@ -37,21 +37,13 @@ class MessageContactController extends Controller
         $dto = UpdateMessageContactDTO::fromArray($request->validated());
         $updated = $this->service->update($messageContact, $dto);
 
-        if ($request->wantsJson()) {
-            return response()->json($updated);
-        }
-
-        return redirect()->back();
+        return response()->json($updated);
     }
 
     public function destroy(MessageContact $messageContact): JsonResponse
     {
         $this->service->delete($messageContact);
 
-        if (request()->wantsJson()) {
-            return response()->json(['success' => true]);
-        }
-
-        return redirect()->back();
+        return response()->json(['success' => true]);
     }
 }

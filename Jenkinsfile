@@ -48,8 +48,8 @@ pipeline {
         catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
           sh '''
             set -e
-            cid=$(docker create -w /app -e HOME=/tmp -e COMPOSER_HOME=/tmp/composer composer:2 \
-              sh -c "composer install --no-interaction --prefer-dist --ignore-platform-reqs && cp -n .env.example .env && php artisan key:generate && php artisan test")
+            cid=$(docker create --entrypoint sh -w /app -e HOME=/tmp -e COMPOSER_HOME=/tmp/composer composer:2 \
+              -c "composer install --no-interaction --prefer-dist --ignore-platform-reqs && cp -n .env.example .env && php artisan key:generate && php artisan test")
             trap 'docker rm -f "$cid" >/dev/null 2>&1' EXIT
             docker cp backend/. "$cid":/app
             docker start -a "$cid" || true

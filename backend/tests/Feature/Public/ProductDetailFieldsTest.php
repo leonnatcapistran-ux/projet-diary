@@ -4,7 +4,6 @@ namespace Tests\Feature\Public;
 
 use App\Models\Produit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ProductDetailFieldsTest extends TestCase
@@ -31,18 +30,17 @@ class ProductDetailFieldsTest extends TestCase
             'statut' => 'actif',
         ]);
 
-        $this->get(route('product.show', $product->id_produit))
+        $this->getJson("/api/produit/{$product->id_produit}")
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('ProductDetail')
-                ->where('product.description', 'Description du produit')
-                ->where('product.origine_details', 'SAVA, Madagascar')
-                ->where('product.calibre_variete', 'Gourmet, 14 à 18 cm')
-                ->where('product.conditionnement', 'Sous vide')
-                ->where('product.methode_extraction', 'Triée à la main')
-                ->where('product.certifications', 'Taux d’humidité inférieur à 35 %')
-                ->where('product.saisonnalite', 'À conserver au frais et au sec')
-                ->where('product.utilisation', 'Pâtisserie et boissons')
-            );
+            ->assertJsonPath('product.description', 'Description du produit')
+            ->assertJsonPath('product.origine_details', 'SAVA, Madagascar')
+            ->assertJsonPath('product.calibre_variete', 'Gourmet, 14 à 18 cm')
+            ->assertJsonPath('product.conditionnement', 'Sous vide')
+            ->assertJsonPath('product.methode_extraction', 'Triée à la main')
+            ->assertJsonPath('product.certifications', 'Taux d’humidité inférieur à 35 %')
+            ->assertJsonPath('product.saisonnalite', 'À conserver au frais et au sec')
+            ->assertJsonPath('product.utilisation', 'Pâtisserie et boissons')
+            ->assertJsonPath('meta.catalogue_href', '/catalogue')
+            ->assertJsonPath('meta.contact_href', '/nous-contacter?produit=Vanille+Bourbon');
     }
 }

@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class ClientController extends Controller
 {
@@ -15,7 +14,7 @@ class ClientController extends Controller
     {
     }
 
-    public function index(Request $request): Response|\Illuminate\Http\JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['search', 'type_client', 'statut', 'role', 'pays_residence']);
         $perPage = (int) $request->query('per_page', 15);
@@ -40,12 +39,12 @@ class ClientController extends Controller
     public function deactivate(User $user)
     {
         $user->update(['statut' => 'inactif']);
-        return redirect()->back();
+        return response()->json($user);
     }
 
     public function activate(User $user)
     {
         $user->update(['statut' => 'actif']);
-        return redirect()->back();
+        return response()->json($user);
     }
 }

@@ -2,7 +2,7 @@ import { Link } from '../lib/inertia-shim'; // Link href-compatible (voir lib/in
 import { motion, type Variants } from 'framer-motion';
 import { Filter, Search, SlidersHorizontal, Sparkles, ShoppingBag, ArrowRight, Leaf } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { api } from '../lib/api';
+import { api, getApiErrorMessage } from '../lib/api';
 import ProductCard from '../components/ProductCard';
 import PublicLayout from '../components/public-layout';
 import type { Product } from '../types/types';
@@ -412,18 +412,55 @@ const Catalogue: React.FC<CatalogueProps> = ({ products = [], categories = [], m
 // GET JSON sur /api/catalogue.
 function CataloguePage() {
   const [state, setState] = useState<CatalogueProps | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    api.get('/api/catalogue').then(({ data }) => {
-      if (!cancelled) setState(data);
-    });
+    setError(null);
+    api.get('/api/catalogue')
+      .then(({ data }) => {
+        if (!Array.isArray(data.products)) {
+          throw new Error('Les données du catalogue sont indisponibles.');
+        }
+        if (!cancelled) setState(data);
+      })
+      .catch((requestError: unknown) => {
+        if (!cancelled) {
+          setError(getApiErrorMessage(requestError, '/api/catalogue', 'les produits'));
+        }
+      });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retry]);
 
-  if (!state) return null; // ou un skeleton/spinner
+  if (error) {
+    return (
+      <PublicLayout>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 bg-[#0a0a0a] px-4 text-center text-white">
+          <p role="alert" className="text-white/80">{error}</p>
+          <button
+            type="button"
+            onClick={() => setRetry((attempt) => attempt + 1)}
+            className="rounded-full bg-gold px-5 py-2 font-semibold text-black"
+          >
+            Réessayer
+          </button>
+        </div>
+      </PublicLayout>
+    );
+  }
+
+  if (!state) {
+    return (
+      <PublicLayout>
+        <div role="status" className="flex min-h-[60vh] items-center justify-center bg-[#0a0a0a] text-sm text-white/70">
+          Chargement des produits…
+        </div>
+      </PublicLayout>
+    );
+  }
 
   return <Catalogue {...state} />;
 }

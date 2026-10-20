@@ -11,11 +11,12 @@ import {
     Linkedin,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import PublicLayout from '../components/public-layout';
 import type { Article } from '../types/types';
 import BlogHero from './BlogHero';
-import { api } from '../lib/api';
+import { api, getApiErrorMessage } from '../lib/api';
 
 type BlogIndexProps = {
     articles: {
@@ -550,18 +551,59 @@ export function BlogPage({ articles }: BlogIndexProps) {
 // (autrefois injectée par Inertia::render('BlogIndex', ['articles' => ...])).
 export default function BlogIndexPage() {
     const [articles, setArticles] = useState<BlogIndexProps['articles'] | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [retry, setRetry] = useState(0);
+    const { search } = useLocation();
+    const page = Math.max(1, Number(new URLSearchParams(search).get('page')) || 1);
 
     useEffect(() => {
         let cancelled = false;
-        api.get('/api/actualites').then(({ data }) => {
-            if (!cancelled) setArticles(data.articles ?? data);
-        });
+        setError(null);
+        setArticles(null);
+        api.get('/api/actualites', { params: { page } })
+            .then(({ data }) => {
+                const result = data.articles ?? data;
+                if (!result || !Array.isArray(result.data)) {
+                    throw new Error('Les données des actualités sont indisponibles.');
+                }
+                if (!cancelled) setArticles(result);
+            })
+            .catch((requestError: unknown) => {
+                if (!cancelled) {
+                    setError(getApiErrorMessage(requestError, '/api/actualites', 'les actualités'));
+                }
+            });
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [page, retry]);
 
-    if (!articles) return null; // ou un skeleton
+    if (error) {
+        return (
+            <PublicLayout>
+                <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 bg-[#0a0a0a] px-4 text-center text-white">
+                    <p role="alert" className="text-white/80">{error}</p>
+                    <button
+                        type="button"
+                        onClick={() => setRetry((attempt) => attempt + 1)}
+                        className="rounded-full bg-gold px-5 py-2 font-semibold text-black"
+                    >
+                        Réessayer
+                    </button>
+                </div>
+            </PublicLayout>
+        );
+    }
+
+    if (!articles) {
+        return (
+            <PublicLayout>
+                <div role="status" className="flex min-h-[60vh] items-center justify-center bg-[#0a0a0a] text-sm text-white/70">
+                    Chargement des actualités…
+                </div>
+            </PublicLayout>
+        );
+    }
 
     return <BlogPage articles={articles} />;
 }

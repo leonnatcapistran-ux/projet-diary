@@ -64,10 +64,16 @@ Créer aussi un environnement `production` (Settings → Environments), avec au 
 
 ## 4. Jenkins (`Jenkinsfile`)
 
-- Plugins : *Docker Pipeline*, *SSH Agent*. L'agent Jenkins doit pouvoir utiliser Docker.
-- Credentials : `registry-creds` (user + token du registre), `deploy-ssh-key` (clé privée SSH).
-- Adapter en haut du fichier : `IMAGE_NS`, `API_URL`, `DEPLOY_HOST`.
-- Job « Pipeline from SCM » (ou Multibranch) pointant sur le dépôt ; les étapes push/deploy ne tournent que sur `main`.
+- Crée un job **Pipeline** et choisis **Pipeline script from SCM** :
+  - SCM : Git
+  - Repository URL : `https://github.com/leonnatcapistran-ux/projet-diary.git`
+  - Branch : `*/main` (ou active la découverte des branches avec un job Multibranch)
+  - Script Path : `Jenkinsfile`
+- L'agent Jenkins doit être Linux et disposer de Docker CLI, d'un accès au daemon Docker et de Docker Compose v2. Le pipeline utilise les étapes `sh` et construit les images sur cet agent.
+- Plugins : Pipeline, Git, Credentials Binding et Timestamper ; ajoute *SSH Agent* pour le mode `server`. Le plugin *Docker Pipeline* n'est pas utilisé par ce Jenkinsfile.
+- En mode `local`, ajoute `diary-env` comme credential de type **Secret file**, contenant le `.env` de déploiement.
+- En mode `server`, ajoute `registry-creds` (identifiant + token GHCR avec `write:packages`) et `deploy-ssh-key` (clé privée SSH). Configure ensuite `SRV_IMAGE_NS`, `SRV_API_URL`, `SRV_DEPLOY_HOST` et `SRV_DEPLOY_DIR` dans le bloc `environment` du Jenkinsfile avec les valeurs réelles du serveur.
+- Le mode `server` ne publie et ne déploie que la branche `main`. Les identifiants ne doivent pas être inscrits dans le Jenkinsfile.
 - Choisis **un seul** des deux outils pour déployer (GitHub Actions *ou* Jenkins), sinon les deux se marcheront dessus.
 
 ## 5. Rollback

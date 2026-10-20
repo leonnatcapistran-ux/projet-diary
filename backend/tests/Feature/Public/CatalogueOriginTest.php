@@ -4,7 +4,6 @@ namespace Tests\Feature\Public;
 
 use App\Models\Produit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class CatalogueOriginTest extends TestCase
@@ -25,11 +24,8 @@ class CatalogueOriginTest extends TestCase
             'statut' => 'actif',
         ]);
 
-        $this->get(route('catalogue.index'))
+        $this->getJson('/api/catalogue')
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('Catalogue')
-                ->where('products.0.origin', 'MADAGASCAR')
-            );
+            ->assertJsonPath('products.0.origin', 'MADAGASCAR');
     }
 }

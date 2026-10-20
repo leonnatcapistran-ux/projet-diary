@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { Component, lazy, Suspense, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { setRouterNavigate } from './lib/inertia-shim';
@@ -40,6 +40,36 @@ const AdminProducts = lazy(() => import('./pages/admin/Products'));
 const AdminReviews = lazy(() => import('./pages/admin/Reviews'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 
+class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+    state = { hasError: false };
+
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error: Error, info: ErrorInfo) {
+        console.error('Une page n’a pas pu être affichée.', error, info);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0a0a0a] px-4 text-center text-white">
+                    <p role="alert">Cette page a rencontré une erreur et ne peut pas s’afficher.</p>
+                    <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="rounded-full bg-gold px-5 py-2 font-semibold text-black"
+                    >
+                        Recharger la page
+                    </button>
+                </main>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 function RequireAuth({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
     if (loading) return null;
@@ -50,7 +80,8 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 function RequireAdmin({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
     if (loading) return null;
-    if (!user || user.role !== 'admin') return <Navigate to="/login" replace />;
+    if (!user) return <Navigate to="/login?redirect_to=%2Fadmin" replace />;
+    if (user.role !== 'admin') return <Navigate to="/" replace />;
     return <>{children}</>;
 }
 
@@ -61,7 +92,12 @@ export default function App() {
     }, [navigate]);
 
     return (
-        <Suspense fallback={null}>
+        <PageErrorBoundary>
+        <Suspense fallback={
+            <div role="status" className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-sm text-white/70">
+                Chargement de la page…
+            </div>
+        }>
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/catalogue" element={<Catalogue />} />
@@ -201,5 +237,6 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </Suspense>
+        </PageErrorBoundary>
     );
 }

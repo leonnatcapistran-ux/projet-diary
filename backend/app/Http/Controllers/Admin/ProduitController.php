@@ -10,8 +10,8 @@ use App\Http\Requests\Admin\UpdateProduitRequest;
 use App\Models\Produit;
 use App\Services\ProduitService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\Response;
 
 class ProduitController extends Controller
 {
@@ -47,11 +47,7 @@ class ProduitController extends Controller
         $dto = CreateProduitDTO::fromRequest($payload);
         $produit = $this->service->create($dto);
 
-        if ($request->wantsJson()) {
-            return response()->json($produit, 201);
-        }
-
-        return redirect()->back();
+        return response()->json($produit, 201);
     }
 
     public function update(UpdateProduitRequest $request, Produit $produit): JsonResponse
@@ -71,21 +67,13 @@ class ProduitController extends Controller
         $dto = UpdateProduitDTO::fromRequest($payload);
         $updated = $this->service->update($produit, $dto);
 
-        if ($request->wantsJson()) {
-            return response()->json($updated);
-        }
-
-        return redirect()->back();
+        return response()->json($updated);
     }
 
     public function destroy(Produit $produit): JsonResponse
     {
         $this->service->delete($produit);
 
-        if (request()->wantsJson()) {
-            return response()->json(null, 204);
-        }
-
-        return redirect()->back();
+        return response()->json(null, 204);
     }
 }

@@ -71,8 +71,8 @@ export default function LoginPage() {
         e.preventDefault();
         post('/login', {
             onSuccess: async () => {
-                await refresh();
-                navigate(redirectTo || '/');
+                const user = await refresh();
+                navigate(redirectTo || (user?.role === 'admin' ? '/admin' : '/'));
             },
             onFinish: () => reset('password'),
         });

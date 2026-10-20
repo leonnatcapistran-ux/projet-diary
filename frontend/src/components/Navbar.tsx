@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import LanguageSelector from './languageSelector';
 import DiaryLogo from './Logo';
+import { useAuth } from '../context/AuthContext';
 
 
 const NAV_LINKS = [
@@ -25,7 +26,16 @@ export default function Navbar() {
     const page = usePage<AuthPageProps>();
     const { auth } = page.props;
     const { cartCount, setIsCartOpen } = useCart();
+    const { logout } = useAuth();
     const currentPath = page.url.split('?')[0];
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (error) {
+            console.error('La déconnexion a échoué.', error);
+        }
+    };
 
     const isLinkActive = (href: string): boolean => {
         if (href === '/') {
@@ -164,14 +174,21 @@ export default function Navbar() {
                                         >
                                             Mon compte
                                         </Link>
-                                        <Link
-                                            href="/logout"
-                                            method="post"
-                                            as="button"
+                                        {auth.user.role === 'admin' && (
+                                            <Link
+                                                href="/admin"
+                                                className="rounded-full px-4 py-1.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+                                            >
+                                                Administration
+                                            </Link>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={handleLogout}
                                             className="rounded-full bg-[#C9A227] px-4 py-1.5 text-sm font-semibold text-black transition hover:bg-[#e0b82d]"
                                         >
                                             Deconnexion
-                                        </Link>
+                                        </button>
                                     </>
                                 ) : (
                                     <>
@@ -256,20 +273,27 @@ export default function Navbar() {
 
                         {auth?.user && (
                             <div className="space-y-2 border-t border-gray-100 pt-3">
+                                {auth.user.role === 'admin' && (
+                                    <Link
+                                        href="/admin"
+                                        className="block py-2 text-sm font-medium text-gray-700"
+                                    >
+                                        Administration
+                                    </Link>
+                                )}
                                 <Link
                                     href="/compte/commandes"
                                     className="block py-2 text-sm font-medium text-gray-700"
                                 >
                                     Mon compte
                                 </Link>
-                                <Link
-                                    href="/logout"
-                                    method="post"
-                                    as="button"
+                                <button
+                                    type="button"
+                                    onClick={handleLogout}
                                     className="w-full rounded-full bg-[#C9A227] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#e0b82d]"
                                 >
                                     Deconnexion
-                                </Link>
+                                </button>
                             </div>
                         )}
 

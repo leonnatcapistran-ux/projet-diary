@@ -9,7 +9,7 @@ use App\Http\Requests\Admin\StoreCategorieArticleRequest;
 use App\Http\Requests\Admin\UpdateCategorieArticleRequest;
 use App\Models\CategorieArticle;
 use App\Services\CategorieArticleService;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\JsonResponse;
 
 class CategorieArticleController extends Controller
 {
@@ -29,21 +29,21 @@ class CategorieArticleController extends Controller
         $dto = CreateCategorieArticleDTO::fromArray($request->validated());
         $category = $this->service->create($dto);
 
-        return redirect()->back()->with('success', 'Catégorie créée avec succès.');
+        return response()->json($category, 201);
     }
 
     public function update(UpdateCategorieArticleRequest $request, CategorieArticle $categorie_article): JsonResponse
     {
         $dto = UpdateCategorieArticleDTO::fromArray($request->validated());
-        $this->service->update($categorie_article, $dto);
+        $updated = $this->service->update($categorie_article, $dto);
 
-        return redirect()->back()->with('success', 'Catégorie mise à jour avec succès.');
+        return response()->json($updated);
     }
 
     public function destroy(CategorieArticle $categorie_article): JsonResponse
     {
         $this->service->delete($categorie_article);
 
-        return redirect()->back()->with('success', 'Catégorie supprimée avec succès.');
+        return response()->json(null, 204);
     }
 }

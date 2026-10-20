@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// URL du backend Laravel. En dev : http://localhost:8000
-export const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+// Le port 8002 est celui exposé par Docker Compose; une URL explicite
+// VITE_API_URL reste prioritaire pour les environnements personnalisés.
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8002';
 
 export const api = axios.create({
     baseURL: API_BASE_URL,
@@ -32,4 +33,25 @@ export function extractValidationErrors(error: unknown): Record<string, string> 
         );
     }
     return {};
+}
+
+export function getApiErrorMessage(error: unknown, endpoint: string, resource: string): string {
+    if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+
+        if (status === 404) {
+            if (endpoint !== '/api/actualites' && endpoint !== '/api/catalogue') {
+                return `${resource} est introuvable (404). Vérifiez le lien ou sa disponibilité.`;
+            }
+            return `L’API ${endpoint} est introuvable (404). Vérifiez que le backend lancé ou déployé contient cette route.`;
+        }
+
+        if (status) {
+            return `Le serveur API a répondu avec l’erreur ${status}. Impossible de charger ${resource}.`;
+        }
+
+        return `Le serveur API est injoignable. Vérifiez son adresse et qu’il est démarré avant de réessayer.`;
+    }
+
+    return `Impossible de charger ${resource}. Vérifiez la réponse de l’API puis réessayez.`;
 }
